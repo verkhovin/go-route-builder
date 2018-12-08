@@ -17,20 +17,24 @@ func NewBuilder() *RouteBuilder {
 	return &RouteBuilder{RoutingTree{&coreNode}}
 }
 
-func (rb RouteBuilder) Get(path string, handler http.Handler) {
+func (rb RouteBuilder) Get(path string, handler http.Handler) RouteBuilder{
 	rb.routingTree.add(path, "GET", handler)
+	return rb
 }
 
-func (rb RouteBuilder) Post(path string, handler http.Handler) {
+func (rb RouteBuilder) Post(path string, handler http.Handler) RouteBuilder{
 	rb.routingTree.add(path, "POST", handler)
+	return rb
 }
 
-func (rb RouteBuilder) Put(path string, handler http.Handler) {
-	rb.routingTree.add(path, "Put", handler)
+func (rb RouteBuilder) Put(path string, handler http.Handler) RouteBuilder{
+	rb.routingTree.add(path, "PUT", handler)
+	return rb
 }
 
-func (rb RouteBuilder) Delete(path string, handler http.Handler) {
-	rb.routingTree.add(path, "Delete", handler)
+func (rb RouteBuilder) Delete(path string, handler http.Handler) RouteBuilder{
+	rb.routingTree.add(path, "GET", handler)
+	return rb
 }
 
 func (rb RouteBuilder) Build() http.Handler {
