@@ -1,8 +1,7 @@
-package GoFluentRouter
+package routebuilder
 
 import (
 	"net/http"
-	"strings"
 )
 
 type RouteBuilder struct {
@@ -18,37 +17,23 @@ func NewBuilder() *RouteBuilder {
 	return &RouteBuilder{RoutingTree{&coreNode}}
 }
 
-type RoutingTree struct {
-	core *RoutingTreeNode
+func (rb RouteBuilder) Get(path string, handler http.Handler) {
+	rb.routingTree.add(path, "GET", handler)
 }
 
-type RoutingTreeNode struct {
-	children map[string]*RoutingTreeNode
-	name     string
-	methods  map[string]http.Handler
+func (rb RouteBuilder) Post(path string, handler http.Handler) {
+	rb.routingTree.add(path, "POST", handler)
 }
 
-func (t RoutingTree) add(pattern string, method string, handler http.Handler) {
-	path := strings.FieldsFunc(pattern, splitFunc)
-	node := t.core
-	for _, value := range path {
-		child := node.children[value]
-		if child == nil {
-			child = newNode(value)
-			node.children[value] = child
-		}
-		node = child
-	}
-	node.methods[method] = handler
+func (rb RouteBuilder) Put(path string, handler http.Handler) {
+	rb.routingTree.add(path, "Put", handler)
 }
 
-func newNode(name string) *RoutingTreeNode {
-	return &RoutingTreeNode{name: name,
-		children: map[string]*RoutingTreeNode{},
-		methods:  map[string]http.Handler{},
-	}
+func (rb RouteBuilder) Delete(path string, handler http.Handler) {
+	rb.routingTree.add(path, "Delete", handler)
 }
 
-func splitFunc(char rune) bool {
-	return char == '/'
+func (rb RouteBuilder) Build() http.Handler {
+	return http.Handler(rb.routingTree)
 }
+
