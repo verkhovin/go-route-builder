@@ -10,7 +10,8 @@ type RoutingTree struct {
 }
 
 type RoutingTreeNode struct {
-	children map[string]*RoutingTreeNode
+	children map[string] *RoutingTreeNode
+	parametrizedChildren []*RoutingTreeNode
 	name     string
 	methods  map[string]http.Handler
 }
@@ -19,23 +20,48 @@ func (t RoutingTree) add(pattern string, method string, handler http.Handler) {
 	path := splitPath(pattern)
 	node := t.core
 	for _, value := range path {
-		child := node.children[value]
-		if child == nil {
-			child = newNode(value)
-			node.children[value] = child
+		var child *RoutingTreeNode
+		if isParam(value) {
+			var ok bool
+			if child, ok = node.getParametrizedChild(value); !ok {
+				child = newNode(value)
+				node.parametrizedChildren = append(node.parametrizedChildren, child)
+			}
+		} else {
+			child = node.children[value]
+			if child == nil {
+				child = newNode(value)
+				node.children[value] = child
+			}
 		}
 		node = child
 	}
 	node.methods[method] = handler
 }
 
+func (node RoutingTreeNode) getParametrizedChild(paramId string) (*RoutingTreeNode, bool) {
+	for _, v := range node.parametrizedChildren {
+		if v.name == paramId {
+			return v, true
+		}
+	}
+	return nil, false
+}
+func isParam(s string) bool {
+	return strings.HasPrefix(s, "{") && strings.HasSuffix(s, "}")
+}
+
 func (t RoutingTree) getHandlerByUrl(url string, method string) http.Handler {
 	path := splitPath(url)
 	node := t.core
-	for _, value := range path {
+	for idx, value := range path {
 		child := node.children[value]
 		if child == nil {
-			return notFoundHandler()
+			if paramChild, ok := node.tryAsParam(path[idx:]); ok {
+				child = paramChild
+			} else {
+				return notFoundHandler()
+			}
 		}
 		node = child
 	}
@@ -45,6 +71,10 @@ func (t RoutingTree) getHandlerByUrl(url string, method string) http.Handler {
 	} else {
 		return handler
 	}
+}
+
+func (node *RoutingTreeNode) tryAsParam(i []string) (*RoutingTreeNode, bool) {
+
 }
 
 func (t RoutingTree) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
